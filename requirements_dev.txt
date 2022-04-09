@@ -1,0 +1,26 @@
+pip
+setuptools
+black
+wheel
+tox
+coverage
+Sphinx
+sphinx-autobuild
+sphinx-autodoc-typehints
+sphinx_rtd_theme
+twine
+Click
+pytest
+pytest-cov
+pytest-asyncio
+Faker
+pylint
+mypy
+doc8
+pre-commit
+
+# Vscode packages
+#snooty-lextudio
+esbonio
+rst2html
+rstcheck
