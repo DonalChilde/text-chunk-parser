@@ -20,7 +20,7 @@ From the project directory, run
     git commit -m "initial commit"
     # To set a github remote origin...
     # https://docs.github.com/en/github/using-git/adding-a-remote
-    git remote add origin https://github.com/DonalChilde/text_chunk_parser.git
+    git remote add origin https://github.com/DonalChilde/text-chunk-parser.git
     # install an editable link to source
     pip install -e .
     # check that the tests pass
