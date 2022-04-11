@@ -1,6 +1,6 @@
 from typing import Dict
 
-from tests.click_hash.conftest import FileResource
+from tests.text_chunk_parser.conftest import FileResource
 
 
 def test_example_resource(json_resources: Dict[str, FileResource]):
