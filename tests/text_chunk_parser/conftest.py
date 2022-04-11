@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional, Union
 
 import pytest
 
-from text_chunk_parser.app_lib.logging import rotating_file_logger
+from pfmsoft.text_chunk_parser.app_lib.logging import rotating_file_logger
 
 APP_LOG_LEVEL = logging.INFO
 TEST_LOG_LEVEL = logging.DEBUG

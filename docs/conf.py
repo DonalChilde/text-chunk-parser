@@ -15,7 +15,7 @@ import sys
 
 sys.path.insert(0, os.path.abspath("../src"))
 
-import text_chunk_parser
+import pfmsoft.text_chunk_parser
 
 # -- Project information -----------------------------------------------------
 
@@ -29,9 +29,9 @@ author = "Chad Lowe"
 # the built documents.
 #
 # The short X.Y version.
-version = text_chunk_parser.__version__
+version = pfmsoft.text_chunk_parser.__version__
 # The full version, including alpha/beta/rc tags.
-release = text_chunk_parser.__version__
+release = pfmsoft.text_chunk_parser.__version__
 # -- General configuration ---------------------------------------------------
 
 # Add any Sphinx extension module names here, as strings. They can be
