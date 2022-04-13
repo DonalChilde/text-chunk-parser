@@ -1,10 +1,14 @@
 """Top-level package for text-chunk-parser."""
 from pfmsoft.text_chunk_parser.text_chunk_parser import (
+    AllFailedToParseException,
     Chunk,
     ChunkParser,
+    EmptyLine,
+    FailedParseException,
     FileChunkProvider,
     ParseContext,
     Parser,
+    ParseSchema,
     StringChunkProvider,
 )
 
