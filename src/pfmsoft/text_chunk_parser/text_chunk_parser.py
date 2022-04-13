@@ -37,19 +37,18 @@ Parser parse_scheme, context
 
 
 """
-
+# TODO allow for debug logging of matches, optional log attempts.
+import re
 from io import StringIO
 from logging import getLogger
 from pathlib import Path
-from typing import Any, Iterable, Mapping, Sequence, Tuple
+from typing import Any, Dict, Iterable, Mapping, Sequence, Tuple
 
 logger = getLogger(__name__)
 
 
 class ChunkParserException(Exception):
-    pass
-    # def __init__(self, *args: object) -> None:
-    #     super().__init__(*args)
+    """Chunk parser exception base class"""
 
 
 class FailedParseException(ChunkParserException):
@@ -62,9 +61,12 @@ class FailedParseException(ChunkParserException):
         **kwargs,
     ) -> None:
         if msg is None:
-            msg = f"explaination: {msg}\nchunk: {chunk!r}\nparser: {parser!r}\nstate: {state}"
+            msg = (
+                f"\n\tFailed to parse chunk using {parser!r} parser."
+                f"\n\tchunk: {chunk!r}"
+                f"\n\tstate: {state}"
+            )
         super().__init__(msg)
-        # self.msg = msg
         self.chunk = chunk
         self.parser = parser
         self.state = state
@@ -82,12 +84,12 @@ class AllFailedToParseException(ChunkParserException):
     ) -> None:
         if msg is None:
             msg = (
-                f"All parsers failed to parse chunk.\nChunk: {chunk}\n"
-                f"parsers: {parsers!r}\nstate: {state}"
+                f"\n\tAll parsers failed to parse chunk."
+                f"\n\tparsers: {parsers!r}"
+                f"\n\tchunk: {chunk}"
+                f"\n\tstate: {state}"
             )
-
         super().__init__(msg)
-        # self.msg = msg
         self.chunk = chunk
         self.parsers = parsers
         self.state = state
@@ -167,54 +169,125 @@ class ParseContext:
 
         _extended_summary_
         """
+        raise NotImplementedError
 
     def cleanup(self):
         """
         Do any work required to clean up after context
 
         """
+        raise NotImplementedError
+
+
+class ParseSchema:
+    def expected(self, state: str) -> Sequence["ChunkParser"]:
+        raise NotImplementedError
 
 
 class ChunkParser:
-    def parse(self, chunk: Chunk, state: str, context: ParseContext) -> Tuple[str, Any]:
+    def parse(
+        self,
+        chunk: Chunk,
+        state: str,
+        context: ParseContext,
+    ) -> Tuple[str, Any]:
         """foo"""
         raise NotImplementedError
 
     def report_parse_fail(self, chunk: Chunk, state: str, **kwargs):
-        raise FailedParseException(None, chunk, self, state)
+        _ = kwargs
+        exc = FailedParseException(None, chunk, self, state)
+        raise exc
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}()"
 
 
 class Parser:
-    def __init__(self, ctx: ParseContext):
-        pass
+    def __init__(
+        self,
+        schema: ParseSchema,
+        log_on_success: bool = False,
+        log_on_failure=True,
+        exc_on_all_fail: bool = True,
+    ):
+        self.schema = schema
+        self.log_on_success = log_on_success
+        self.log_on_failure = log_on_failure
+        self.exc_on_all_fail = exc_on_all_fail
+
+    def _log_success(
+        self, chunk: Chunk, chunk_parser: ChunkParser, state: str, data: Any
+    ):
+        if self.log_on_success:
+            logger.info(
+                "\n\tParsed chunk: %s with %r state: %s data: %s",
+                chunk.chunk_id,
+                chunk_parser,
+                state,
+                data,
+            )
+
+    def _log_failure(self, exc: FailedParseException):
+        if self.log_on_failure:
+            logger.info(exc)
+
+    def _attempt_parse(
+        self,
+        chunk: Chunk,
+        state: str,
+        context: ParseContext,
+        parsers: Sequence[ChunkParser],
+    ):
+        for chunk_parser in parsers:
+            try:
+                new_state, data = chunk_parser.parse(chunk, state, context)
+                context.parsed_data(chunk_parser, new_state, data)
+                self._log_success(chunk, chunk_parser, new_state, data)
+                return new_state
+            except FailedParseException as exc:
+                self._log_failure(exc)
+                continue
+        logger.info(
+            (
+                "All parsers failed to parse chunk.\nChunk: %s\n"
+                "parsers: %r\nstate: %s"
+            ),
+            chunk,
+            parsers,
+            state,
+        )
+        if self.exc_on_all_fail:
+            raise AllFailedToParseException(None, chunk, parsers, state)
 
     def parse(
         self,
-        parse_scheme: Mapping[str, Sequence[ChunkParser]],
         context: ParseContext,
         chunk_provider: Iterable,
-        report_fail: bool = True,
     ):
         state = "origin"
         context.initialize()
         for chunk in chunk_provider:
-            for chunk_parser in parse_scheme[state]:
-                try:
-                    new_state, data = chunk_parser.parse(chunk, state, context)
-                    context.parsed_data(chunk_parser, new_state, data)
-                    state = new_state
-                    break
-                except FailedParseException as ex:
-                    logger.info(ex)
-            logger.warning(
-                (
-                    "All parsers failed to parse chunk.\nChunk: %s\n"
-                    "parsers: %r\nstate: %s"
-                ),
+            new_state = self._attempt_parse(
                 chunk,
-                parse_scheme[state],
                 state,
+                context,
+                self.schema.expected(state),
             )
-            if report_fail:
-                raise AllFailedToParseException(None, chunk, parse_scheme[state], state)
+            state = new_state
         context.cleanup()
+
+
+class EmptyLine(ChunkParser):
+    def parse(
+        self,
+        chunk: Chunk,
+        state: str,
+        context: ParseContext,
+    ) -> Tuple[str, Dict]:
+        regex = r"(?P<whitespace>[^\S\n]*)\n"
+        pattern = re.compile(regex)
+        match = pattern.match(chunk.text)
+        if match:
+            return ("empty_line", {"whitespace": match.group("whitespace")})
+        return self.report_parse_fail(chunk, state)
