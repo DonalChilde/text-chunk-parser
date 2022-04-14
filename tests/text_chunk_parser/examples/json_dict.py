@@ -58,93 +58,93 @@ class JsonParseContext(ParseContext):
 
 
 class DictEndLine(ChunkParser):
+    def __init__(self) -> None:
+        regex = r"^}\n$"
+        self.pattern = re.compile(regex)
+
     def parse(
         self,
         chunk: Chunk,
         state: str,
         context: ParseContext,
     ) -> Tuple[str, Dict]:
-        regex = r"^}\n$"
-        pattern = re.compile(regex)
-        match = pattern.match(chunk.text)
-        if match:
-            return (
-                "dict_end",
-                {},
-            )
-        return self.report_parse_fail(chunk, state)
+        self.regex_match_or_fail(self.pattern, chunk, state)
+        return (
+            "dict_end",
+            {},
+        )
 
 
 class ListEndLine(ChunkParser):
+    def __init__(self) -> None:
+        regex = r"^\s*\],\n$"
+        self.pattern = re.compile(regex)
+
     def parse(
         self,
         chunk: Chunk,
         state: str,
         context: ParseContext,
     ) -> Tuple[str, Dict]:
-        regex = r"^\s*\],\n$"
-        pattern = re.compile(regex)
-        match = pattern.match(chunk.text)
-        if match:
-            return (
-                "list_end",
-                {},
-            )
-        return self.report_parse_fail(chunk, state)
+        self.regex_match_or_fail(self.pattern, chunk, state)
+        return (
+            "list_end",
+            {},
+        )
 
 
 class ListValueLine(ChunkParser):
+    def __init__(self) -> None:
+        regex = r"^\s*\"(?P<value>[\w\s'`\-]+)\",\n$"
+        self.pattern = re.compile(regex)
+
     def parse(
         self,
         chunk: Chunk,
         state: str,
         context: ParseContext,
     ) -> Tuple[str, Dict]:
-        regex = r"^\s*\"(?P<value>[\w\s'`\-]+)\",\n$"
-        pattern = re.compile(regex)
-        match = pattern.match(chunk.text)
-        if match:
-            return (
-                "list_value",
-                {"value": match.group("value")},
-            )
-        return self.report_parse_fail(chunk, state)
+        match = self.regex_match_or_fail(self.pattern, chunk, state)
+        return (
+            "list_value",
+            {"value": match.group("value")},
+        )
 
 
 class KeyListLine(ChunkParser):
+    def __init__(self) -> None:
+        regex = r"^\s*\"(?P<key>[\w\s]+)\"\:\s*(?P<value>\[)\n$"
+        self.pattern = re.compile(regex)
+
     def parse(
         self,
         chunk: Chunk,
         state: str,
         context: ParseContext,
     ) -> Tuple[str, Dict]:
-        regex = r"^\s*\"(?P<key>[\w\s]+)\"\:\s*(?P<value>\[)\n$"
-        pattern = re.compile(regex)
-        match = pattern.match(chunk.text)
-        if match:
-            return (
-                "key_list",
-                {"key": match.group("key")},
-            )
-        return self.report_parse_fail(chunk, state)
+        match = self.regex_match_or_fail(self.pattern, chunk, state)
+        return (
+            "key_list",
+            {"key": match.group("key")},
+        )
 
 
 class KeyValueLine(ChunkParser):
+    def __init__(self) -> None:
+        regex = r"^\s*\"(?P<key>[\w\s]+)\"\:\s*\"(?P<value>[\w\s.]+)\",\n$"
+        self.pattern = re.compile(regex)
+
     def parse(
         self,
         chunk: Chunk,
         state: str,
         context: ParseContext,
     ) -> Tuple[str, Dict]:
-        regex = r"^\s*\"(?P<key>[\w\s]+)\"\:\s*\"(?P<value>[\w\s.]+)\",\n$"
-        pattern = re.compile(regex)
-        match = pattern.match(chunk.text)
-        if match:
-            return (
-                "key_value",
-                {"key": match.group("key"), "value": match.group("value")},
-            )
-        return self.report_parse_fail(chunk, state)
+        match = self.regex_match_or_fail(self.pattern, chunk, state)
+        return (
+            "key_value",
+            {"key": match.group("key"), "value": match.group("value")},
+        )
 
 
 class IdentifierLine(ChunkParser):
