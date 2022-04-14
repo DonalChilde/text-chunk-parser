@@ -197,7 +197,6 @@ class ChunkParser:
         raise NotImplementedError
 
     def report_parse_fail(self, chunk: Chunk, state: str, **kwargs):
-
         exc = FailedParseException(None, chunk, self, state, **kwargs)
         raise exc
 
