@@ -39,7 +39,7 @@ class JsonParseSchema(ParseSchema):
 
 
 class JsonParseContext(ParseContext):
-    def parsed_data(self, chunk_parser: "ChunkParser", state, data):
+    def parsed_data(self, state, data):
         """Handle the parsed data."""
         pass
 
@@ -162,4 +162,4 @@ class IdentifierLine(ChunkParser):
             and tokens[2] == "{"
         ):
             return ("identifier", {"identifier": tokens[0]})
-        return self.report_parse_fail(chunk, state)
+        return self.report_parse_fail(None, chunk, state)
