@@ -83,20 +83,27 @@ class AllFailedToParseException(ChunkParserException):
         chunk: "Chunk",
         parsers: Sequence["ChunkParser"],
         state: str,
-        excs: Sequence[FailedParseException] = None,
+        excs: Sequence[FailedParseException] | None = None,
         **kwargs,
     ) -> None:
+        if excs is None:
+            self.excs: Sequence[FailedParseException] = []
+        else:
+            self.excs = excs
         if msg is None:
-            msg = f"\n\t{parsers!r} failed to parse chunk {chunk.chunk_id}."
+            msg = (
+                f"\n\t{parsers!r} failed to parse chunk."
+                f"\n\tchunk: {chunk!r}"
+                f"\n\tstate: {state}"
+            )
+            reasons = [f"\n\t{exc.parser!r}: {exc.reason}" for exc in excs]  # type: ignore
+            msg = msg + "".join(reasons)
+
         super().__init__(msg)
         self.chunk = chunk
         self.parsers = parsers
         self.state = state
         self.kwargs = kwargs
-        if excs is None:
-            self.excs: Sequence[FailedParseException] = []
-        else:
-            self.excs = excs
 
 
 class Chunk:
@@ -259,16 +266,9 @@ class Parser:
                 fail_excs.append(exc)
                 logger.info(exc)
                 continue
-        logger.info(
-            (
-                "All parsers failed to parse chunk.\nChunk: %s\n"
-                "parsers: %r\nstate: %s"
-            ),
-            chunk,
-            parsers,
-            state,
-        )
-        raise AllFailedToParseException(None, chunk, parsers, state, fail_excs)
+        raised_exc = AllFailedToParseException(None, chunk, parsers, state, fail_excs)
+        logger.info(raised_exc)
+        raise raised_exc
 
     def parse(
         self,
