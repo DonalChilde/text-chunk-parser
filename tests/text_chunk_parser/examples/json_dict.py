@@ -162,4 +162,4 @@ class IdentifierLine(ChunkParser):
             and tokens[2] == "{"
         ):
             return ("identifier", {"identifier": tokens[0]})
-        return self.report_parse_fail(None, chunk, state)
+        return self.raise_parse_fail(None, chunk, state)

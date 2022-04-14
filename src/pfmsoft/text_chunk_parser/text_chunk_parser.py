@@ -204,7 +204,7 @@ class ChunkParser:
         """returns a tuple of (state,data)"""
         raise NotImplementedError
 
-    def report_parse_fail(
+    def raise_parse_fail(
         self,
         reason: str | None,
         chunk: Chunk,
@@ -222,7 +222,7 @@ class ChunkParser:
         if match:
             return match
         reason = f"Regex pattern {pattern.pattern!r} failed to match text."
-        self.report_parse_fail(reason, chunk, state, regex=pattern.pattern)
+        self.raise_parse_fail(reason, chunk, state, regex=pattern.pattern)
 
     def __repr__(self):
         return f"{self.__class__.__name__}()"
