@@ -55,6 +55,7 @@ class FailedParseException(ChunkParserException):
     def __init__(
         self,
         msg: str | None,
+        reason: str | None,
         chunk: "Chunk",
         parser: "ChunkParser",
         state: str,
@@ -62,12 +63,13 @@ class FailedParseException(ChunkParserException):
     ) -> None:
         if msg is None:
             msg = (
-                f"\n\tFailed to parse chunk using {parser!r} parser."
+                f"\n\tFailed to parse chunk {chunk.chunk_id} using {parser!r} parser."
+                f"\n\treason: {reason}"
                 f"\n\tchunk: {chunk!r}"
                 f"\n\tstate: {state}"
-                f"\n\textra: {kwargs}"
             )
         super().__init__(msg)
+        self.reason = reason
         self.chunk = chunk
         self.parser = parser
         self.state = state
@@ -81,21 +83,20 @@ class AllFailedToParseException(ChunkParserException):
         chunk: "Chunk",
         parsers: Sequence["ChunkParser"],
         state: str,
+        excs: Sequence[FailedParseException] = None,
         **kwargs,
     ) -> None:
         if msg is None:
-            msg = (
-                f"\n\tAll parsers failed to parse chunk."
-                f"\n\tparsers: {parsers!r}"
-                f"\n\tchunk: {chunk}"
-                f"\n\tstate: {state}"
-                f"\n\textra: {kwargs}"
-            )
+            msg = f"\n\t{parsers!r} failed to parse chunk {chunk.chunk_id}."
         super().__init__(msg)
         self.chunk = chunk
         self.parsers = parsers
         self.state = state
         self.kwargs = kwargs
+        if excs is None:
+            self.excs: Sequence[FailedParseException] = []
+        else:
+            self.excs = excs
 
 
 class Chunk:
@@ -161,7 +162,7 @@ class StringChunkProvider(ChunkProvider):
 
 
 class ParseContext:
-    def parsed_data(self, chunk_parser: "ChunkParser", state, data):
+    def parsed_data(self, state: str, data: Any):
         """Handle the parsed data."""
         raise NotImplementedError
 
@@ -196,9 +197,25 @@ class ChunkParser:
         """returns a tuple of (state,data)"""
         raise NotImplementedError
 
-    def report_parse_fail(self, chunk: Chunk, state: str, **kwargs):
-        exc = FailedParseException(None, chunk, self, state, **kwargs)
-        raise exc
+    def report_parse_fail(
+        self,
+        reason: str | None,
+        chunk: Chunk,
+        state: str,
+        exc: Exception | None = None,
+        **kwargs,
+    ):
+        fail_exc = FailedParseException(None, reason, chunk, self, state, **kwargs)
+        if exc:
+            raise fail_exc from exc
+        raise fail_exc
+
+    def regex_match_or_fail(self, pattern: re.Pattern, chunk: Chunk, state: str):
+        match = pattern.match(chunk.text)
+        if match:
+            return match
+        reason = f"Regex pattern {pattern.pattern!r} failed to match text."
+        self.report_parse_fail(reason, chunk, state, regex=pattern.pattern)
 
     def __repr__(self):
         return f"{self.__class__.__name__}()"
@@ -209,29 +226,21 @@ class Parser:
         self,
         schema: ParseSchema,
         log_on_success: bool = False,
-        log_on_failure=True,
-        exc_on_all_fail: bool = True,
     ):
         self.schema = schema
         self.log_on_success = log_on_success
-        self.log_on_failure = log_on_failure
-        self.exc_on_all_fail = exc_on_all_fail
 
     def _log_success(
         self, chunk: Chunk, chunk_parser: ChunkParser, state: str, data: Any
     ):
         if self.log_on_success:
-            logger.info(
+            logger.debug(
                 "\n\tParsed chunk: %s with %r state: %s data: %s",
                 chunk.chunk_id,
                 chunk_parser,
                 state,
                 data,
             )
-
-    def _log_failure(self, exc: FailedParseException):
-        if self.log_on_failure:
-            logger.info(exc)
 
     def _attempt_parse(
         self,
@@ -240,14 +249,15 @@ class Parser:
         context: ParseContext,
         parsers: Sequence[ChunkParser],
     ):
+        fail_excs: List[FailedParseException] = []
         for chunk_parser in parsers:
             try:
                 new_state, data = chunk_parser.parse(chunk, state, context)
-                context.parsed_data(chunk_parser, new_state, data)
                 self._log_success(chunk, chunk_parser, new_state, data)
-                return new_state
+                return new_state, data
             except FailedParseException as exc:
-                self._log_failure(exc)
+                fail_excs.append(exc)
+                logger.info(exc)
                 continue
         logger.info(
             (
@@ -258,8 +268,7 @@ class Parser:
             parsers,
             state,
         )
-        if self.exc_on_all_fail:
-            raise AllFailedToParseException(None, chunk, parsers, state)
+        raise AllFailedToParseException(None, chunk, parsers, state, fail_excs)
 
     def parse(
         self,
@@ -269,26 +278,27 @@ class Parser:
         state = "origin"
         context.initialize()
         for chunk in chunk_provider:
-            new_state = self._attempt_parse(
+            new_state, data = self._attempt_parse(
                 chunk,
                 state,
                 context,
                 self.schema.expected(state),
             )
             state = new_state
+            context.parsed_data(new_state, data)
         context.cleanup()
 
 
 class EmptyLine(ChunkParser):
+    def __init__(self) -> None:
+        regex = r"^(?P<whitespace>[^\S\n]*)\n$"
+        self.pattern = re.compile(regex)
+
     def parse(
         self,
         chunk: Chunk,
         state: str,
         context: ParseContext,
     ) -> Tuple[str, Dict]:
-        regex = r"(?P<whitespace>[^\S\n]*)\n"
-        pattern = re.compile(regex)
-        match = pattern.match(chunk.text)
-        if match:
-            return ("empty_line", {"whitespace": match.group("whitespace")})
-        return self.report_parse_fail(chunk, state)
+        match = self.regex_match_or_fail(self.pattern, chunk, state)
+        return ("empty_line", {"whitespace": match.group("whitespace")})
