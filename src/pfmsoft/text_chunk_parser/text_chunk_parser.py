@@ -65,6 +65,7 @@ class FailedParseException(ChunkParserException):
                 f"\n\tFailed to parse chunk using {parser!r} parser."
                 f"\n\tchunk: {chunk!r}"
                 f"\n\tstate: {state}"
+                f"\n\textra: {kwargs}"
             )
         super().__init__(msg)
         self.chunk = chunk
@@ -88,6 +89,7 @@ class AllFailedToParseException(ChunkParserException):
                 f"\n\tparsers: {parsers!r}"
                 f"\n\tchunk: {chunk}"
                 f"\n\tstate: {state}"
+                f"\n\textra: {kwargs}"
             )
         super().__init__(msg)
         self.chunk = chunk
@@ -191,12 +193,12 @@ class ChunkParser:
         state: str,
         context: ParseContext,
     ) -> Tuple[str, Any]:
-        """foo"""
+        """returns a tuple of (state,data)"""
         raise NotImplementedError
 
     def report_parse_fail(self, chunk: Chunk, state: str, **kwargs):
-        _ = kwargs
-        exc = FailedParseException(None, chunk, self, state)
+
+        exc = FailedParseException(None, chunk, self, state, **kwargs)
         raise exc
 
     def __repr__(self):
