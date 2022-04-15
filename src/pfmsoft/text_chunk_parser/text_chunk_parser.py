@@ -129,8 +129,11 @@ class Chunk:
 
 
 class ChunkProvider:
-    def __init__(self, source: str):
+    def __init__(self, source: str, skip_empty_chunks: bool = True):
         self.source = source
+        self.skip_empty_chunks = skip_empty_chunks
+        regex = r"^(?P<whitespace>[^\S\n]*)\n$"
+        self.empty_line_pattern = re.compile(regex)
 
     def __enter__(self):
         pass
@@ -138,10 +141,28 @@ class ChunkProvider:
     def __exit__(self, exc_type, exc_value, exc_traceback):
         pass
 
+    def log_empty_line(self, source: str, line_number: int):
+        logger.info(
+            "%s skipping blank line %s from %s",
+            self.__class__.__name__,
+            line_number,
+            source,
+        )
+
+    def _check_for_skip(self, text: str, count: int) -> bool:
+        if self.skip_empty_chunks:
+            match = self.empty_line_pattern.match(text)
+            if match:
+                self.log_empty_line(self.source, count)
+                return True
+        return False
+
 
 class FileChunkProvider(ChunkProvider):
-    def __init__(self, filepath: Path, encoding="utf-8"):
-        super().__init__(source=str(filepath))
+    def __init__(
+        self, filepath: Path, skip_empty_chunks: bool = True, encoding="utf-8"
+    ):
+        super().__init__(source=str(filepath), skip_empty_chunks=skip_empty_chunks)
         self.filepath = filepath
         self.file_obj = open(filepath, mode="r", encoding=encoding)
 
@@ -155,12 +176,14 @@ class FileChunkProvider(ChunkProvider):
         count = 0
         for line in self.file_obj:
             count += 1
+            if self._check_for_skip(line, count):
+                continue
             yield Chunk(str(count), self.source, line)
 
 
 class StringChunkProvider(ChunkProvider):
-    def __init__(self, source: str, text: str):
-        super().__init__(source=source)
+    def __init__(self, source: str, text: str, skip_empty_chunks: bool = True):
+        super().__init__(source=source, skip_empty_chunks=skip_empty_chunks)
         self.file_obj = StringIO(text)
 
     def __enter__(self):
@@ -173,6 +196,8 @@ class StringChunkProvider(ChunkProvider):
         count = 0
         for line in self.file_obj:
             count += 1
+            if self._check_for_skip(line, count):
+                continue
             yield Chunk(str(count), self.source, line)
 
 
