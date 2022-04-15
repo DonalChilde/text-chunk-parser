@@ -169,7 +169,7 @@ class StringChunkProvider(ChunkProvider):
 
 
 class ParseContext:
-    def parsed_data(self, state: str, data: Any):
+    def parsed_data(self, state: str, data: Any, chunk: Chunk, parser: "ChunkParser"):
         """Handle the parsed data."""
         raise NotImplementedError
 
@@ -259,13 +259,14 @@ class Parser:
         state: str,
         context: ParseContext,
         parsers: Sequence[ChunkParser],
-    ):
+    ) -> Tuple[str, Any, ChunkParser]:
+
         fail_excs: List[FailedParseException] = []
         for chunk_parser in parsers:
             try:
                 new_state, data = chunk_parser.parse(chunk, state, context)
                 self._log_success(chunk, chunk_parser, new_state, data)
-                return new_state, data
+                return new_state, data, chunk_parser
             except FailedParseException as exc:
                 fail_excs.append(exc)
                 logger.info(exc)
@@ -282,14 +283,14 @@ class Parser:
         state = "origin"
         context.initialize()
         for chunk in chunk_provider:
-            new_state, data = self._attempt_parse(
+            new_state, data, parser = self._attempt_parse(
                 chunk,
                 state,
                 context,
                 self.schema.expected(state),
             )
             state = new_state
-            context.parsed_data(new_state, data)
+            context.parsed_data(new_state, data, chunk, parser)
         context.cleanup()
 
 
