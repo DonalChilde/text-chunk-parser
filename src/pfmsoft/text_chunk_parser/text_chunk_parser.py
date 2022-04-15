@@ -241,9 +241,13 @@ class Parser:
         self, chunk: Chunk, chunk_parser: ChunkParser, state: str, data: Any
     ):
         if self.log_on_success:
-            logger.debug(
-                "\n\tParsed chunk: %s with %r state: %s data: %s",
-                chunk.chunk_id,
+            logger.info(
+                "Parse successful.\n"
+                "\tchunk: %r\n"
+                "\tparser: %r\n"
+                "\tResulting parser state: %r\n"
+                "\tpParsed data: %r",
+                chunk,
                 chunk_parser,
                 state,
                 data,
