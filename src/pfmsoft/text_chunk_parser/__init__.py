@@ -3,6 +3,7 @@ from pfmsoft.text_chunk_parser.text_chunk_parser import (
     AllFailedToParseException,
     Chunk,
     ChunkParser,
+    ChunkProvider,
     EmptyLine,
     FailedParseException,
     FileChunkProvider,
