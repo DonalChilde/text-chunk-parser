@@ -40,11 +40,12 @@ Parser parse_scheme, context
 
 import re
 from io import StringIO
-from logging import getLogger
+from logging import NullHandler, getLogger
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Sequence, Tuple
 
 logger = getLogger(__name__)
+logger.addHandler(NullHandler())
 
 
 class ChunkParserException(Exception):
