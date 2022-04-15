@@ -107,14 +107,16 @@ class AllFailedToParseException(ChunkParserException):
 
 
 class Chunk:
-    def __init__(self, chunk_id: str, text: str):
+    def __init__(self, chunk_id: str, source: str, text: str):
         self.chunk_id = chunk_id
+        self.source = source
         self.text = text
 
     def __repr__(self):
         return (
             f"{__class__.__name__}("
             f"chunk_id={self.chunk_id!r}, "
+            f"source={self.source!r}, "
             f"text={self.text!r}"
             f")"
         )
@@ -126,6 +128,9 @@ class Chunk:
 
 
 class ChunkProvider:
+    def __init__(self, source: str):
+        self.source = source
+
     def __enter__(self):
         pass
 
@@ -135,6 +140,7 @@ class ChunkProvider:
 
 class FileChunkProvider(ChunkProvider):
     def __init__(self, filepath: Path, encoding="utf-8"):
+        super().__init__(source=str(filepath))
         self.filepath = filepath
         self.file_obj = open(filepath, mode="r", encoding=encoding)
 
@@ -148,11 +154,12 @@ class FileChunkProvider(ChunkProvider):
         count = 0
         for line in self.file_obj:
             count += 1
-            yield Chunk(str(count), line)
+            yield Chunk(str(count), self.source, line)
 
 
 class StringChunkProvider(ChunkProvider):
-    def __init__(self, text: str):
+    def __init__(self, source: str, text: str):
+        super().__init__(source=source)
         self.file_obj = StringIO(text)
 
     def __enter__(self):
@@ -165,7 +172,7 @@ class StringChunkProvider(ChunkProvider):
         count = 0
         for line in self.file_obj:
             count += 1
-            yield Chunk(str(count), line)
+            yield Chunk(str(count), self.source, line)
 
 
 class ParseContext:

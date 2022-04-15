@@ -41,7 +41,7 @@ def test_parse_schema(caplog):
     context = JsonParseContext()
     schema = JsonParseSchema()
     parser = Parser(schema, log_on_success=True)
-    with StringChunkProvider(JSON_DICT) as provider:
+    with StringChunkProvider("Json Dict", JSON_DICT) as provider:
         try:
             parser.parse(context, provider)
         except AllFailedToParseException as exc:
@@ -49,17 +49,17 @@ def test_parse_schema(caplog):
             assert False
 
 
-def parse_test(parse_tests: Sequence[ParseTest], parser: ChunkParser):
+def parse_test(parse_tests: Sequence[ParseTest], source: str, parser: ChunkParser):
     for count, test in enumerate(parse_tests):
-        chunk = Chunk(str(count), test.text)
+        chunk = Chunk(str(count), source, test.text)
         state, data = parser().parse(chunk, "origin", None)
         assert state == test.state
         assert data == test.data
 
 
-def parse_test_fail(parse_tests: Sequence[ParseTest], parser: ChunkParser):
+def parse_test_fail(parse_tests: Sequence[ParseTest], source: str, parser: ChunkParser):
     for count, test in enumerate(parse_tests):
-        chunk = Chunk(str(count), test.text)
+        chunk = Chunk(str(count), source, test.text)
         with pytest.raises(FailedParseException) as exc:
             _, _ = parser().parse(chunk, "origin", None)
             assert exc.state == "origin"  # type: ignore
@@ -71,12 +71,14 @@ def test_identier_parse():
     parse_tests: Sequence[ParseTest] = [
         ParseTest("foo = {\n", "identifier", {"identifier": "foo"})
     ]
-    parse_test(parse_tests, IdentifierLine)
+    source = __name__
+    parse_test(parse_tests, source, IdentifierLine)
 
 
 def test_identifier_parse_fail():
     parse_tests: Sequence[ParseTest] = [ParseTest("  bad value  ],\n", "list_end", {})]
-    parse_test_fail(parse_tests, IdentifierLine)
+    source = __name__
+    parse_test_fail(parse_tests, source, IdentifierLine)
 
 
 def test_empty_line_parse():
@@ -84,12 +86,14 @@ def test_empty_line_parse():
         ParseTest("\n", "empty_line", {"whitespace": ""}),
         ParseTest("   \n", "empty_line", {"whitespace": "   "}),
     ]
-    parse_test(parse_tests, EmptyLine)
+    source = __name__
+    parse_test(parse_tests, source, EmptyLine)
 
 
 def test_empty_line_parse_fail():
     parse_tests: Sequence[ParseTest] = [ParseTest("  bad value  ],\n", "list_end", {})]
-    parse_test_fail(parse_tests, EmptyLine)
+    source = __name__
+    parse_test_fail(parse_tests, source, EmptyLine)
 
 
 def test_key_value_line():
@@ -100,12 +104,14 @@ def test_key_value_line():
             {"key": "Name", "value": "B. S. Johnson"},
         )
     ]
-    parse_test(parse_tests, KeyValueLine)
+    source = __name__
+    parse_test(parse_tests, source, KeyValueLine)
 
 
 def test_key_value_line_parse_fail():
     parse_tests: Sequence[ParseTest] = [ParseTest("  bad value  ],\n", "list_end", {})]
-    parse_test_fail(parse_tests, KeyValueLine)
+    source = __name__
+    parse_test_fail(parse_tests, source, KeyValueLine)
 
 
 def test_key_list_line():
@@ -114,12 +120,14 @@ def test_key_list_line():
             '    "Notable Creations": [\n', "key_list", {"key": "Notable Creations"}
         )
     ]
-    parse_test(parse_tests, KeyListLine)
+    source = __name__
+    parse_test(parse_tests, source, KeyListLine)
 
 
 def test_key_list_line_parse_fail():
     parse_tests: Sequence[ParseTest] = [ParseTest("  bad value  ],\n", "list_end", {})]
-    parse_test_fail(parse_tests, KeyListLine)
+    source = __name__
+    parse_test_fail(parse_tests, source, KeyListLine)
 
 
 def test_list_value_line():
@@ -130,29 +138,35 @@ def test_list_value_line():
             {"value": "Archchancellor's Bathroom"},
         )
     ]
-    parse_test(parse_tests, ListValueLine)
+    source = __name__
+    parse_test(parse_tests, source, ListValueLine)
 
 
 def test_list_value_parse_fail():
     parse_tests: Sequence[ParseTest] = [ParseTest("  bad value  ],\n", "list_end", {})]
-    parse_test_fail(parse_tests, ListValueLine)
+    source = __name__
+    parse_test_fail(parse_tests, source, ListValueLine)
 
 
 def test_list_end_line():
     parse_tests: Sequence[ParseTest] = [ParseTest("    ],\n", "list_end", {})]
-    parse_test(parse_tests, ListEndLine)
+    source = __name__
+    parse_test(parse_tests, source, ListEndLine)
 
 
 def test_list_end_parse_fail():
     parse_tests: Sequence[ParseTest] = [ParseTest("  bad value  ],\n", "list_end", {})]
-    parse_test_fail(parse_tests, ListEndLine)
+    source = __name__
+    parse_test_fail(parse_tests, source, ListEndLine)
 
 
 def test_dict_end_line():
     parse_tests: Sequence[ParseTest] = [ParseTest("}\n", "dict_end", {})]
-    parse_test(parse_tests, DictEndLine)
+    source = __name__
+    parse_test(parse_tests, source, DictEndLine)
 
 
 def test_dict_end_parse_fail():
     parse_tests: Sequence[ParseTest] = [ParseTest("  bad value  ],\n", "list_end", {})]
-    parse_test_fail(parse_tests, DictEndLine)
+    source = __name__
+    parse_test_fail(parse_tests, source, DictEndLine)
