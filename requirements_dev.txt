@@ -12,8 +12,6 @@ twine
 Click
 pytest
 pytest-cov
-pytest-asyncio
-Faker
 pylint
 mypy
 doc8
