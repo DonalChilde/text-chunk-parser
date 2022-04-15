@@ -203,7 +203,7 @@ class StringChunkProvider(ChunkProvider):
 
 class ParseContext:
     def parsed_data(self, state: str, data: Any, chunk: Chunk, parser: "ChunkParser"):
-        """Handle the parsed data."""
+        """Handle the parsed data. Check for SkipChunk, means ignore data and state"""
         raise NotImplementedError
 
     def initialize(self):
@@ -340,3 +340,17 @@ class EmptyLine(ChunkParser):
     ) -> Tuple[str, Dict]:
         match = self.regex_match_or_fail(self.pattern, chunk, state)
         return ("empty_line", {"whitespace": match.group("whitespace")})
+
+
+class SkipChunk(ChunkParser):
+    def __init__(self) -> None:
+        pass
+
+    def parse(
+        self,
+        chunk: Chunk,
+        state: str,
+        context: ParseContext,
+    ) -> Tuple[str, Dict]:
+
+        return (state, {})
