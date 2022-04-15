@@ -1,5 +1,5 @@
 import re
-from typing import Dict, Sequence, Tuple
+from typing import Any, Dict, Sequence, Tuple
 
 from pfmsoft.text_chunk_parser import Chunk, ChunkParser, ParseContext, ParseSchema
 from pfmsoft.text_chunk_parser.text_chunk_parser import EmptyLine
@@ -39,7 +39,7 @@ class JsonParseSchema(ParseSchema):
 
 
 class JsonParseContext(ParseContext):
-    def parsed_data(self, state, data):
+    def parsed_data(self, state: str, data: Any, chunk: Chunk, parser: ChunkParser):
         """Handle the parsed data."""
         pass
 
