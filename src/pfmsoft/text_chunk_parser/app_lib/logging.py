@@ -25,7 +25,7 @@ def rotating_file_handler(
     Returns:
         RotatingFileHandler: The confgured RotatingFileHandler.
     """
-
+    # TODO update logging code library,cookie cutter
     log_dir.mkdir(parents=True, exist_ok=True)
     log_file = log_dir / Path(file_name)
     log_file.with_suffix(".log")
@@ -33,7 +33,7 @@ def rotating_file_handler(
     if format_string is None:
         format_string = (
             "%(asctime)s %(levelname)s:%(funcName)s: "
-            "%(message)s [in %(pathname)s:%(lineno)d]"
+            "[in %(pathname)s:%(lineno)d] \n\t%(message)s"
         )
     handler.setFormatter(logging.Formatter(format_string))
     handler.setLevel(log_level)

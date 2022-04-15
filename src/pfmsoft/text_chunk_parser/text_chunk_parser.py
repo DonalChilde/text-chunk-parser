@@ -64,10 +64,10 @@ class FailedParseException(ChunkParserException):
     ) -> None:
         if msg is None:
             msg = (
-                f"\n\tFailed to parse chunk {chunk.chunk_id} using {parser!r} parser."
+                f"Failed to parse chunk {chunk.chunk_id} using {parser!r} parser."
                 f"\n\treason: {reason}"
                 f"\n\tchunk: {chunk!r}"
-                f"\n\tstate: {state}"
+                f"\n\tcurrent state: {state}"
             )
         super().__init__(msg)
         self.reason = reason
@@ -93,7 +93,7 @@ class AllFailedToParseException(ChunkParserException):
             self.excs = excs
         if msg is None:
             msg = (
-                f"\n\t{parsers!r} failed to parse chunk."
+                f"{parsers!r} failed to parse chunk."
                 f"\n\tchunk: {chunk!r}"
                 f"\n\tstate: {state}"
             )
@@ -254,7 +254,7 @@ class Parser:
                 "\tchunk: %r\n"
                 "\tparser: %r\n"
                 "\tResulting parser state: %r\n"
-                "\tpParsed data: %r",
+                "\tParsed data: %r",
                 chunk,
                 chunk_parser,
                 state,

@@ -36,7 +36,7 @@ class ParseTest:
     data: Dict = field(default_factory=dict)
 
 
-def test_parse_schema(caplog):
+def test_parse_schema(caplog, logger: logging.Logger):
     caplog.set_level(logging.INFO)
     context = JsonParseContext()
     schema = JsonParseSchema()
@@ -45,7 +45,7 @@ def test_parse_schema(caplog):
         try:
             parser.parse(context, provider)
         except AllFailedToParseException as exc:
-            print(exc)
+            logger.info(exc)
             assert False
 
 

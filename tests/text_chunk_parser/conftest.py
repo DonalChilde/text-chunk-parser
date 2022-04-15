@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional, Union
 
 import pytest
 
-from pfmsoft.text_chunk_parser.app_lib.logging import rotating_file_logger
+from pfmsoft.text_chunk_parser.app_lib.logging import rotating_file_handler
 
 APP_LOG_LEVEL = logging.INFO
 TEST_LOG_LEVEL = logging.DEBUG
@@ -25,13 +25,19 @@ class FileResource:
 @pytest.fixture(scope="session", name="logger")
 def _logger(test_log_path):
     """A central logger that will log to file."""
-    # log_file_name = f"{__name__}.log"
-    log_dir: Path = test_log_path / Path("test-logs")
-
-    logger = rotating_file_logger(
-        log_dir=log_dir, log_name=__name__, log_level=TEST_LOG_LEVEL
+    # TODO update cookiecutter
+    log_dir: Path = test_log_path
+    handler = rotating_file_handler(
+        log_dir=log_dir, file_name=__name__, log_level=TEST_LOG_LEVEL
     )
-
+    logger = logging.getLogger(__name__)
+    logger.setLevel(TEST_LOG_LEVEL)
+    logger.addHandler(handler)
+    logger.info("Rotating file logger %s initialized.", __name__)
+    chunk_logger = logging.getLogger("pfmsoft.text_chunk_parser")
+    chunk_logger.addHandler(handler)
+    chunk_logger.setLevel(TEST_LOG_LEVEL)
+    logger.info("%s library added to log file.", "pfmsoft.text_chunk_parser")
     return logger
 
 
@@ -46,7 +52,8 @@ def test_log_path_(test_app_data_dir) -> Path:
 @pytest.fixture(scope="session", name="test_app_data_dir")
 def test_app_data_dir_(tmp_path_factory) -> Path:
     """make a temp directory for app data."""
-    test_app_data_dir = tmp_path_factory.mktemp("click_hash-")
+    # TODO fix temp dir name in cookie cutter
+    test_app_data_dir = tmp_path_factory.mktemp("text_chunk_parser")
     return test_app_data_dir
 
 
