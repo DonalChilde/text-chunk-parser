@@ -127,8 +127,42 @@ class Chunk:
             return False
         return self.chunk_id == other.chunk_id, self.text == other.text
 
+    def _debug_print(self):
+        # TODO make a useful debug print string, expect to have next/prev tuples.
+        raise NotImplementedError()
+
+
+class ChunkExpanded(Chunk):
+    def __init__(self, chunk_id: str, source: str, text: str):
+        super().__init__(chunk_id=chunk_id, source=source, text=text)
+        self.previous: Sequence[Tuple[int, str]] = []
+        self.following: Sequence[Tuple[int, str]] = []
+        # FIXME make history/peek a standard chunk ability.
+
+    def __repr__(self):
+        return (
+            f"{__class__.__name__}("
+            f"chunk_id={self.chunk_id!r}, "
+            f"source={self.source!r}, "
+            f"text={self.text!r}"
+            f")"
+        )
+
+    def __eq__(self, other):
+        if not isinstance(other, Chunk):
+            return False
+        return self.chunk_id == other.chunk_id, self.text == other.text
+
 
 class ChunkProvider:
+    """
+    _summary_
+
+    _extended_summary_
+    TODO keep internal next/previous limited list of raw chunks. add as
+        tuple to Chunk to support look ahead/look back and better debug messages.
+    """
+
     def __init__(self, source_name: str, skip_empty_chunks: bool = True):
         self.source_name = source_name
         self.skip_empty_chunks = skip_empty_chunks
@@ -168,6 +202,7 @@ class FileChunkProvider(ChunkProvider):
     ):
         super().__init__(source_name=source_name, skip_empty_chunks=skip_empty_chunks)
         self.filepath = filepath
+        # FIXME move file open to __enter__?
         self.file_obj = open(filepath, mode="r", encoding=encoding)
 
     def __enter__(self):
