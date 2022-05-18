@@ -1,7 +1,13 @@
 import re
-from typing import Any, Dict, Sequence, Tuple
+from typing import Dict, List, Sequence
 
-from pfmsoft.text_chunk_parser import Chunk, ChunkParser, ParseContext, ParseSchema
+from pfmsoft.text_chunk_parser import (
+    Chunk,
+    ChunkParser,
+    ParseResult,
+    ParseResultHandler,
+    ParseSchema,
+)
 from pfmsoft.text_chunk_parser.text_chunk_parser import EmptyLine
 
 JSON_DICT = """
@@ -38,23 +44,17 @@ class JsonParseSchema(ParseSchema):
         return parsers
 
 
-class JsonParseContext(ParseContext):
-    def parsed_data(self, state: str, data: Any, chunk: Chunk, parser: ChunkParser):
+class JsonResultHandler(ParseResultHandler):
+    # TODO implement parsed_data so that full behavior can be tested.
+    #   Right now, success is verified by examining log output. Needs a round trip
+    #   of the data to automate verification.
+    def __init__(self, result_store: List) -> None:
+        super().__init__()
+        self.result_store = result_store
+
+    def parsed_data(self, parse_result: ParseResult):
         """Handle the parsed data."""
-        pass
-
-    def initialize(self):
-        """
-        Do any work required to initialize the context.
-
-        _extended_summary_
-        """
-
-    def cleanup(self):
-        """
-        Do any work required to clean up after context
-
-        """
+        self.result_store.append(parse_result)
 
 
 class DictEndLine(ChunkParser):
@@ -66,13 +66,10 @@ class DictEndLine(ChunkParser):
         self,
         chunk: Chunk,
         state: str,
-        context: ParseContext,
-    ) -> Tuple[str, Dict]:
+        parse_hints: Dict | None = None,
+    ) -> ParseResult:
         self.regex_match_or_fail(self.pattern, chunk, state)
-        return (
-            "dict_end",
-            {},
-        )
+        return ParseResult("dict_end", {}, self, chunk)
 
 
 class ListEndLine(ChunkParser):
@@ -84,13 +81,10 @@ class ListEndLine(ChunkParser):
         self,
         chunk: Chunk,
         state: str,
-        context: ParseContext,
-    ) -> Tuple[str, Dict]:
+        parse_hints: Dict | None = None,
+    ) -> ParseResult:
         self.regex_match_or_fail(self.pattern, chunk, state)
-        return (
-            "list_end",
-            {},
-        )
+        return ParseResult("list_end", {}, self, chunk)
 
 
 class ListValueLine(ChunkParser):
@@ -102,13 +96,10 @@ class ListValueLine(ChunkParser):
         self,
         chunk: Chunk,
         state: str,
-        context: ParseContext,
-    ) -> Tuple[str, Dict]:
+        parse_hints: Dict | None = None,
+    ) -> ParseResult:
         match = self.regex_match_or_fail(self.pattern, chunk, state)
-        return (
-            "list_value",
-            {"value": match.group("value")},
-        )
+        return ParseResult("list_value", {"value": match.group("value")}, self, chunk)
 
 
 class KeyListLine(ChunkParser):
@@ -120,13 +111,10 @@ class KeyListLine(ChunkParser):
         self,
         chunk: Chunk,
         state: str,
-        context: ParseContext,
-    ) -> Tuple[str, Dict]:
+        parse_hints: Dict | None = None,
+    ) -> ParseResult:
         match = self.regex_match_or_fail(self.pattern, chunk, state)
-        return (
-            "key_list",
-            {"key": match.group("key")},
-        )
+        return ParseResult("key_list", {"key": match.group("key")}, self, chunk)
 
 
 class KeyValueLine(ChunkParser):
@@ -138,12 +126,14 @@ class KeyValueLine(ChunkParser):
         self,
         chunk: Chunk,
         state: str,
-        context: ParseContext,
-    ) -> Tuple[str, Dict]:
+        parse_hints: Dict | None = None,
+    ) -> ParseResult:
         match = self.regex_match_or_fail(self.pattern, chunk, state)
-        return (
+        return ParseResult(
             "key_value",
             {"key": match.group("key"), "value": match.group("value")},
+            self,
+            chunk,
         )
 
 
@@ -152,14 +142,14 @@ class IdentifierLine(ChunkParser):
         self,
         chunk: Chunk,
         state: str,
-        context: ParseContext,
-    ) -> Tuple[str, Dict]:
-        tokens = chunk.text.split()
+        parse_hints: Dict | None = None,
+    ) -> ParseResult:
+        tokens = chunk.morsel().text.split()
         if (
             len(tokens) == 3
             and tokens[0].isidentifier()
             and tokens[1] == "="
             and tokens[2] == "{"
         ):
-            return ("identifier", {"identifier": tokens[0]})
+            return ParseResult("identifier", {"identifier": tokens[0]}, self, chunk)
         return self.raise_parse_fail(None, chunk, state)

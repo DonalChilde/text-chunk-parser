@@ -1,15 +1,16 @@
+# pylint: disable=missing-docstring
 import logging
 from dataclasses import dataclass, field
-from pickle import FALSE
-from typing import Dict, Sequence
+from io import StringIO
+from typing import Dict, List, Sequence
 
 import pytest
 from tests.text_chunk_parser.examples.json_dict import (
     JSON_DICT,
     DictEndLine,
     IdentifierLine,
-    JsonParseContext,
     JsonParseSchema,
+    JsonResultHandler,
     KeyListLine,
     KeyValueLine,
     ListEndLine,
@@ -17,16 +18,19 @@ from tests.text_chunk_parser.examples.json_dict import (
 )
 
 from pfmsoft.text_chunk_parser import (
+    AllFailedToParseException,
     Chunk,
+    ChunkIterator,
+    ChunkParser,
     EmptyLine,
     FailedParseException,
+    Morsel,
     Parser,
-    StringChunkProvider,
+    ParseResult,
 )
-from pfmsoft.text_chunk_parser.text_chunk_parser import (
-    AllFailedToParseException,
-    ChunkParser,
-)
+
+# TODO check that schema actually parses
+# TODO test various combinations of peek, history, and input size.
 
 
 @dataclass
@@ -38,28 +42,37 @@ class ParseTest:
 
 def test_parse_schema(caplog, logger: logging.Logger):
     caplog.set_level(logging.INFO)
-    context = JsonParseContext()
     schema = JsonParseSchema()
     parser = Parser(schema, log_on_success=True)
-    with StringChunkProvider("Json Dict", JSON_DICT) as provider:
-        try:
-            parser.parse(context, provider)
-        except AllFailedToParseException as exc:
-            logger.info(exc)
-            assert False
+    provider = ChunkIterator(StringIO(JSON_DICT), "Json Dict")
+    results: List[ParseResult] = []
+    try:
+        with JsonResultHandler(results) as handler:
+            parser.parse(handler, provider)
+    except AllFailedToParseException as exc:
+        logger.info(exc)
+        assert False
+    # assert False
 
 
 def parse_test(parse_tests: Sequence[ParseTest], source: str, parser: ChunkParser):
     for count, test in enumerate(parse_tests):
-        chunk = Chunk(str(count), source, test.text)
-        state, data = parser().parse(chunk, "origin", None)
-        assert state == test.state
-        assert data == test.data
+
+        chunk = Chunk(
+            data=(Morsel(str(count), test.text),), source=source, current_index=0
+        )
+        parse_result = parser().parse(chunk, "not_used")
+        assert parse_result.new_state == test.state
+        assert parse_result.data == test.data
+        assert parse_result.chunk is chunk
+        assert isinstance(parse_result.parser, parser)
 
 
 def parse_test_fail(parse_tests: Sequence[ParseTest], source: str, parser: ChunkParser):
     for count, test in enumerate(parse_tests):
-        chunk = Chunk(str(count), source, test.text)
+        chunk = Chunk(
+            data=(Morsel(str(count), test.text),), source=source, current_index=0
+        )
         with pytest.raises(FailedParseException) as exc:
             _, _ = parser().parse(chunk, "origin", None)
             assert exc.state == "origin"  # type: ignore
@@ -81,7 +94,7 @@ def test_identifier_parse_fail():
     parse_test_fail(parse_tests, source, IdentifierLine)
 
 
-def test_empty_line_parse():
+def test_empty_chunk_parse():
     parse_tests: Sequence[ParseTest] = [
         ParseTest("\n", "empty_line", {"whitespace": ""}),
         ParseTest("   \n", "empty_line", {"whitespace": "   "}),
@@ -90,7 +103,7 @@ def test_empty_line_parse():
     parse_test(parse_tests, source, EmptyLine)
 
 
-def test_empty_line_parse_fail():
+def test_empty_chunk_parse_fail():
     parse_tests: Sequence[ParseTest] = [ParseTest("  bad value  ],\n", "list_end", {})]
     source = __name__
     parse_test_fail(parse_tests, source, EmptyLine)

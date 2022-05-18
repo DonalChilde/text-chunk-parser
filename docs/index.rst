@@ -1,5 +1,5 @@
 Welcome to text-chunk-parser's documentation!
-======================================
+=============================================
 
 .. toctree::
    :maxdepth: 2

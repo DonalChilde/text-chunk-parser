@@ -20,7 +20,7 @@ import pfmsoft.text_chunk_parser
 # -- Project information -----------------------------------------------------
 
 project = "text-chunk-parser"
-copyright = "2022, Chad Lowe"
+copyright_ = "2022, Chad Lowe"
 author = "Chad Lowe"
 
 

@@ -1,0 +1,47 @@
+{
+  // Place your text_chunk_parser workspace snippets here. Each snippet is defined under a snippet name and has a scope, prefix, body and
+  // description. Add comma separated ids of the languages where the snippet is applicable in the scope field. If scope
+  // is left empty or omitted, the snippet gets applied to all languages. The prefix is what is
+  // used to trigger the snippet and the body will be expanded and inserted. Possible variables are:
+  // $1, $2 for tab stops, $0 for the final cursor position, and ${1:label}, ${2:another} for placeholders.
+  // Placeholders with the same ids are connected.
+  // Example:
+  // "Print to console": {
+  // 	"scope": "javascript,typescript",
+  // 	"prefix": "log",
+  // 	"body": [
+  // 		"console.log('$1');",
+  // 		"$2"
+  // 	],
+  // 	"description": "Log output to console"
+  // }
+
+  "File header comment": {
+    "prefix": "pfm_fileheader",
+    "body": [
+      "# -*- coding: utf-8 -*-",
+      "#",
+      "#  $TM_FILENAME",
+      "#  ${2:_project_}",
+      "#",
+      "#  Created by Chad Lowe on $CURRENT_YEAR-$CURRENT_MONTH-$CURRENT_DATE.",
+      "#  Copyright $CURRENT_YEAR Chad Lowe. All rights reserved.",
+      "#"
+    ]
+  },
+  "mypy inline configuration": {
+    "scope": "python",
+    "prefix": "mypy_inline",
+    "body": ["# mypy: ${1:_value_}"]
+  },
+  "mypy ignore": {
+    "scope": "python",
+    "prefix": "mypy_ignore",
+    "body": ["# type: ignore[${1:_value_}]"]
+  },
+  "pylint disable": {
+    "scope": "python",
+    "prefix": "pylint_disable",
+    "body": ["# pylint: disable=${1:_value_}"]
+  }
+}

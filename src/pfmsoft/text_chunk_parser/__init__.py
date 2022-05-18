@@ -2,17 +2,17 @@
 from pfmsoft.text_chunk_parser.text_chunk_parser import (
     AllFailedToParseException,
     Chunk,
+    ChunkIterator,
     ChunkParser,
-    ChunkProvider,
     EmptyLine,
     FailedParseException,
-    FileChunkProvider,
-    ParseContext,
+    Morsel,
     Parser,
+    ParseResult,
+    ParseResultHandler,
     ParseSchema,
-    StringChunkProvider,
 )
 
 __author__ = """Chad Lowe"""
 __email__ = "pfmsoft@gmail.com"
-__version__ = "0.1.6"
+__version__ = "0.1.8"
