@@ -10,8 +10,9 @@ from pfmsoft.text_chunk_parser.chunk_parser import (
     ParseResult,
     ParseResultHandler,
     ParseSchema,
+    SkipChunk,
 )
 
 __author__ = """Chad Lowe"""
 __email__ = "pfmsoft@gmail.com"
-__version__ = "0.1.9"
+__version__ = "0.1.10"

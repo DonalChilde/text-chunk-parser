@@ -12,27 +12,25 @@ from logging import NullHandler, getLogger
 from typing import Any, Callable, Iterable, Tuple
 
 from pfmsoft.text_chunk_parser.cached_iterator import CachedIterator
-from pfmsoft.text_chunk_parser.enumerated_filtered_iterator import (
-    Enumerated,
-    EnumeratedFilteredIter,
-)
+from pfmsoft.text_chunk_parser.enumerated_iterator import Enumerated, EnumeratedIterable
+from pfmsoft.text_chunk_parser.filtered_iterator import FilteredIterable
 
 logger = getLogger(__name__)
 logger.addHandler(NullHandler())
 
 
-def blank_lines(count: int, text: str) -> bool:
+def blank_lines(value: Enumerated) -> bool:
     """
     An example of a filter function that can be used with ChunkIterator.
     This function will skip blank lines.
     """
     regex = r"^(?P<whitespace>[^\S\n]*)\n$"
     empty_line_pattern = re.compile(regex)
-    match = empty_line_pattern.match(text)
+    match = empty_line_pattern.match(value.value)
     if match:
         logger.info(
             "Line number %s has only white space.",
-            count,
+            value.count,
         )
         return False
     return True
@@ -101,9 +99,10 @@ class ChunkIterator:
         self.past_size = max(past_size, 1)
         self.peek_size = max(peek_size, 1)
         self.chunk_filter = chunk_filter
-        enum_filtered = EnumeratedFilteredIter(iterable, self.chunk_filter)
+        enum_iterable = EnumeratedIterable(iterable)
+        filtered_iterable = FilteredIterable(enum_iterable, self.chunk_filter)
         cached = CachedIterator(
-            enum_filtered, past_size=self.past_size, peek_size=self.peek_size
+            filtered_iterable, past_size=self.past_size, peek_size=self.peek_size
         )
         self.iterable = cached
 

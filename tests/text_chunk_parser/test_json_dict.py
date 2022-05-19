@@ -28,7 +28,7 @@ from pfmsoft.text_chunk_parser import (
     Parser,
     ParseResult,
 )
-from pfmsoft.text_chunk_parser.enumerated_filtered_iterator import Enumerated
+from pfmsoft.text_chunk_parser.enumerated_iterator import Enumerated
 
 pp = pprint.PrettyPrinter(indent=2)
 
