@@ -4,11 +4,11 @@ from typing import Dict, List, Sequence
 from pfmsoft.text_chunk_parser import (
     Chunk,
     ChunkParser,
+    EmptyLine,
     ParseResult,
     ParseResultHandler,
     ParseSchema,
 )
-from pfmsoft.text_chunk_parser.text_chunk_parser import EmptyLine
 
 JSON_DICT = """
 foo = {
@@ -144,7 +144,7 @@ class IdentifierLine(ChunkParser):
         state: str,
         parse_hints: Dict | None = None,
     ) -> ParseResult:
-        tokens = chunk.morsel().text.split()
+        tokens = chunk.text.split()
         if (
             len(tokens) == 3
             and tokens[0].isidentifier()

@@ -25,10 +25,10 @@ from pfmsoft.text_chunk_parser import (
     ChunkParser,
     EmptyLine,
     FailedParseException,
-    Morsel,
     Parser,
     ParseResult,
 )
+from pfmsoft.text_chunk_parser.enumerated_filtered_iterator import Enumerated
 
 pp = pprint.PrettyPrinter(indent=2)
 
@@ -61,10 +61,7 @@ def test_parse_schema(caplog, logger: logging.Logger):
 
 def parse_test(parse_tests: Sequence[ParseTest], source: str, parser: ChunkParser):
     for count, test in enumerate(parse_tests):
-
-        chunk = Chunk(
-            data=(Morsel(str(count), test.text),), source=source, current_index=0
-        )
+        chunk = Chunk(value=Enumerated(count, test.text), source=source)
         parse_result = parser().parse(chunk, "not_used")
         assert parse_result.new_state == test.state
         assert parse_result.data == test.data
@@ -74,9 +71,7 @@ def parse_test(parse_tests: Sequence[ParseTest], source: str, parser: ChunkParse
 
 def parse_test_fail(parse_tests: Sequence[ParseTest], source: str, parser: ChunkParser):
     for count, test in enumerate(parse_tests):
-        chunk = Chunk(
-            data=(Morsel(str(count), test.text),), source=source, current_index=0
-        )
+        chunk = Chunk(value=Enumerated(count, test.text), source=source)
         with pytest.raises(FailedParseException) as exc:
             _, _ = parser().parse(chunk, "origin", None)
             assert exc.state == "origin"  # type: ignore
