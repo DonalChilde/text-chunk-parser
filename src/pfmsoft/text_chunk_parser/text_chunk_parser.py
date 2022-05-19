@@ -35,14 +35,17 @@ text, as well as a configurable number of "peeks" into future values, and past v
 
 Usage:
 
-    context = JsonParseContext()
     schema = JsonParseSchema()
     parser = Parser(schema, log_on_success=True)
-    provider = ChunkIterator(StringIO(JSON_DICT), "Json Dict")
-    try:
-        parser.parse(context, provider)
-    except AllFailedToParseException as exc:
-        logger.info(exc)
+    chunk_iterator = ChunkIterator(StringIO(JSON_DICT), "Json Dict")
+    results: List[ParseResult] = []
+    with JsonResultHandler(results) as handler:
+        try:
+            parser.parse(handler, chunk_iterator)
+        except AllFailedToParseException as exc:
+            logger.warning(exc)
+            raise exc
+
 
 
 

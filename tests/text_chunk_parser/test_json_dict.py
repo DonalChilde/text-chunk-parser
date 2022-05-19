@@ -1,5 +1,6 @@
 # pylint: disable=missing-docstring
 import logging
+import pprint
 from dataclasses import dataclass, field
 from io import StringIO
 from typing import Dict, List, Sequence
@@ -29,6 +30,8 @@ from pfmsoft.text_chunk_parser import (
     ParseResult,
 )
 
+pp = pprint.PrettyPrinter(indent=2)
+
 # TODO check that schema actually parses
 # TODO test various combinations of peek, history, and input size.
 
@@ -46,12 +49,13 @@ def test_parse_schema(caplog, logger: logging.Logger):
     parser = Parser(schema, log_on_success=True)
     provider = ChunkIterator(StringIO(JSON_DICT), "Json Dict")
     results: List[ParseResult] = []
-    try:
-        with JsonResultHandler(results) as handler:
+    with JsonResultHandler(results) as handler:
+        try:
             parser.parse(handler, provider)
-    except AllFailedToParseException as exc:
-        logger.info(exc)
-        assert False
+            pp.pprint(results)
+        except AllFailedToParseException as exc:
+            logger.info(exc)
+            assert False
     # assert False
 
 
